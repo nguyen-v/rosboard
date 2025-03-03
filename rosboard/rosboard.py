@@ -19,7 +19,7 @@ else:
     print("ROS not detected. Please source your ROS environment\n(e.g. 'source /opt/ros/DISTRO/setup.bash')")
     exit(1)
 
-# from geometry_msgs.msg import Twist, TwistStamped
+from geometry_msgs.msg import Twist, TwistStamped
 from rosgraph_msgs.msg import Log
 from std_msgs.msg import Header
 
@@ -62,7 +62,7 @@ class ROSBoardNode(object):
             # before dynamic subscribing will work later.
             # ros2 docs don't explain why but we need this magic.
             self.sub_rosout = rospy.Subscriber("/rosout", Log, lambda x:x)
-        # self.twist_pub = rospy.Publisher('/omnibot/cmd_vel', TwistStamped, queue_size=100)
+        self.twist_pub = rospy.Publisher('/omnibot/cmd_vel', TwistStamped, queue_size=100)
         
         tornado_settings = {
             'debug': True,
@@ -98,7 +98,7 @@ class ROSBoardNode(object):
         # loop to keep track of latencies and clock differences for each socket
         threading.Thread(target = self.pingpong_loop, daemon = True).start()
 
-        # threading.Thread(target = self.joy_loop, daemon = True).start()
+        threading.Thread(target = self.joy_loop, daemon = True).start()
         self.lock = threading.Lock()
 
         rospy.loginfo("ROSboard listening on :%d" % self.port)
@@ -156,22 +156,22 @@ class ROSBoardNode(object):
             else:
                 rospy.logwarn("QoS profiles are only used in ROS2")
                 return None
-    # def joy_loop(self):
-    #     """
-    #     Sending joy message from client using TwistStamped messages.
-    #     """
-    #     while True:
-    #         time.sleep(0.1)
-    #         if not isinstance(ROSBoardSocketHandler.joy_msg, dict):
-    #             continue
-    #         if 'x' in ROSBoardSocketHandler.joy_msg and 'y' in ROSBoardSocketHandler.joy_msg:
-    #             twist_stamped = TwistStamped()
-    #             # Set the header timestamp and frame; adjust "base_link" as needed.
-    #             twist_stamped.header.stamp = rospy.Time.now()
-    #             twist_stamped.header.frame_id = "base_link"
-    #             twist_stamped.twist.linear.x = -float(ROSBoardSocketHandler.joy_msg['y']) * 3.0
-    #             twist_stamped.twist.angular.z = -float(ROSBoardSocketHandler.joy_msg['x']) * 2.0
-    #             self.twist_pub.publish(twist_stamped)
+    def joy_loop(self):
+        """
+        Sending joy message from client using TwistStamped messages.
+        """
+        while True:
+            time.sleep(0.1)
+            if not isinstance(ROSBoardSocketHandler.joy_msg, dict):
+                continue
+            if 'x' in ROSBoardSocketHandler.joy_msg and 'y' in ROSBoardSocketHandler.joy_msg:
+                twist_stamped = TwistStamped()
+                # Set the header timestamp and frame; adjust "base_link" as needed.
+                twist_stamped.header.stamp = rospy.Time.now()
+                twist_stamped.header.frame_id = "base_link"
+                twist_stamped.twist.linear.x = -float(ROSBoardSocketHandler.joy_msg['y']) * 2.0
+                twist_stamped.twist.linear.y = -float(ROSBoardSocketHandler.joy_msg['x']) * 2.0
+                self.twist_pub.publish(twist_stamped)
 
     def pingpong_loop(self):
         """
