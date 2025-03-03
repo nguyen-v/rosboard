@@ -7,8 +7,8 @@ class WebSocketV1Transport {
       this.onTopics = onTopics ? onTopics.bind(this) : null;
       this.onSystem = onSystem ? onSystem.bind(this) : null;
       this.ws = null;
-      this.joystickX = 0.0;
-      this.joystickY = 0.0;
+      this.leftJoystick = { x: 0.0, y: 0.0 };
+      this.rightJoystick = { x: 0.0 };
     }
   
     connect() {
@@ -53,10 +53,15 @@ class WebSocketV1Transport {
         else if(wsMsgType === WebSocketV1Transport.MSG_SYSTEM && that.onSystem) that.onSystem(data[1]);
         else console.log("received unknown message: " + wsmsg.data);
         this.send(JSON.stringify([WebSocketV1Transport.JOY_MSG, {
-          ["x"]: that.joystickX.toFixed(3),
-          ["y"]: that.joystickY.toFixed(3),
-          ["buttons"]: that.buttons,
-        }]));      
+          left: {
+            x: that.leftJoystick ? that.leftJoystick.x.toFixed(3) : "0.000",
+            y: that.leftJoystick ? that.leftJoystick.y.toFixed(3) : "0.000"
+          },
+          right: {
+            x: that.rightJoystick ? that.rightJoystick.x.toFixed(3) : "0.000"
+          },
+          buttons: that.buttons,
+        }]));
       }
     }
   
@@ -72,9 +77,12 @@ class WebSocketV1Transport {
       this.ws.send(JSON.stringify([WebSocketV1Transport.MSG_UNSUB, {topicName: topicName}]));
     }
 
-    update_joy({joystickX, joystickY}) {
-      this.joystickX = joystickX;
-      this.joystickY = joystickY;
+    update_joy({ joystick, x, y }) {
+      if (joystick === "left") {
+        this.leftJoystick = { x, y };
+      } else if (joystick === "right") {
+        this.rightJoystick = { x };
+      }
     }
 
   }
