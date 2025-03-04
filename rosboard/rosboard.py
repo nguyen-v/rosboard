@@ -167,11 +167,11 @@ class ROSBoardNode(object):
                 twist_stamped.header.stamp = rospy.Time.now()
                 twist_stamped.header.frame_id = "base_link"
                 # Use left joystick for linear velocity.
-                twist_stamped.twist.linear.x = -float(ROSBoardSocketHandler.joy_msg['left']['y']) * 2.0
+                twist_stamped.twist.linear.x = -float(ROSBoardSocketHandler.joy_msg['left']['y']) * 1.0
                 # Optionally, use left joystick x value for lateral motion:
-                twist_stamped.twist.linear.y = -float(ROSBoardSocketHandler.joy_msg['left']['x']) * 2.0
+                twist_stamped.twist.linear.y = -float(ROSBoardSocketHandler.joy_msg['left']['x']) * 1.0
                 # Use right joystick for angular velocity.
-                twist_stamped.twist.angular.z = float(ROSBoardSocketHandler.joy_msg['right']['x']) * 2.0
+                twist_stamped.twist.angular.z = -float(ROSBoardSocketHandler.joy_msg['right']['x']) * 3.14159265
                 self.twist_pub.publish(twist_stamped)
 
 
