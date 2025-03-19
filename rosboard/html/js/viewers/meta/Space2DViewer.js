@@ -238,6 +238,13 @@ class Space2DViewer extends Viewer {
     this.ctx.fillStyle = "#303035";
     this.ctx.fillRect(0, 0, this.size, this.size);
 
+    // SAVE current state and apply rotation transformation:
+    this.ctx.save();
+    // translate to center, rotate, then translate back
+    this.ctx.translate(this.size/2, this.size/2);
+    this.ctx.rotate(-Math.PI/2); // 90° counterclockwise
+    this.ctx.translate(-this.size/2, -this.size/2);
+
     // draw grid
     if(this.xmax - this.xmin < 50 ) {
       this.ctx.lineWidth = 1;
@@ -311,6 +318,7 @@ class Space2DViewer extends Viewer {
         this.ctx.fillText(drawObject.text, x2px(drawObject.x), y2py(drawObject.y));
       }
     }
+    this.ctx.restore();
     this.drawObjects = drawObjects;
   }
 }
