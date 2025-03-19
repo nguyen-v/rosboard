@@ -69,8 +69,8 @@ class Space2DViewer extends Viewer {
 
     this.canvas[0].addEventListener('mousemove', function(e) {
       if(this.dragging) {
-        let deltax = e.clientX - this.lastX;
-        let deltay = e.clientY - this.lastY;
+        let deltay = e.clientX - this.lastX;
+        let deltax = - (e.clientY - this.lastY);
         that.pan(-deltax * (that.xmax - that.xmin) / that.size, deltay * (that.ymax - that.ymin) / that.size);
         this.lastX = e.clientX;
         this.lastY = e.clientY;
