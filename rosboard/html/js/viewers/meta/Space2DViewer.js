@@ -174,9 +174,12 @@ class Space2DViewer extends Viewer {
       });
       if(that.isScaling && e.touches.length < 2) {
         that.isScaling = false;
+        // Swap pan axes and adjust calculations for rotated coordinate system
         that.pan(
-          -that.panDistX * (that.xmax - that.xmin) / that.size / this.clientWidth * that.size,
-          that.panDistY * (that.ymax - that.ymin) / that.size / this.clientHeight * that.size,
+          // Vertical touch movement (original Y) now affects X-axis
+          that.panDistY * (that.xmax - that.xmin) / that.size / this.clientHeight * that.size,
+          // Horizontal touch movement (original X) now affects Y-axis
+          that.panDistX * (that.ymax - that.ymin) / that.size / this.clientWidth * that.size
         );
         that.zoom(that.simZoomFactor);
         that.panDistX = 0;
@@ -228,84 +231,83 @@ class Space2DViewer extends Viewer {
   }
 
   draw(drawObjects) {
-    // converts x in meters to pixel-wise x based on current bounds
-    let x2px = (x) => Math.floor(this.size * ((x - this.xmin) / (this.xmax - this.xmin)));
-    // converts y in meters to pixel-wise y based on current bounds
-    let y2py = (y) => Math.floor(this.size * (1 - (y - this.ymin) / (this.ymax - this.ymin)));
-
-    // clear the drawing
+    // Convert y in meters to pixel-wise x based on current bounds (rotated x-axis)
+    let x2px = (y) => Math.floor(this.size * (1 - (y - this.ymin) / (this.ymax - this.ymin)));
+    // Convert x in meters to pixel-wise y based on current bounds (rotated y-axis)
+    let y2py = (x) => Math.floor(this.size * (1 - (x - this.xmin) / (this.xmax - this.xmin)));
+  
+    // Clear the drawing
     this.ctx.clearRect(0, 0, this.size, this.size);
     this.ctx.fillStyle = "#303035";
     this.ctx.fillRect(0, 0, this.size, this.size);
-
-    // SAVE current state and apply rotation transformation:
-    this.ctx.save();
-    // translate to center, rotate, then translate back
-    this.ctx.translate(this.size/2, this.size/2);
-    this.ctx.rotate(-Math.PI/2); // 90° counterclockwise
-    this.ctx.translate(-this.size/2, -this.size/2);
-
-    // draw grid
-    if(this.xmax - this.xmin < 50 ) {
+  
+    // Draw grid
+    if(this.ymax - this.ymin < 50 ) { // Check y span for grid density
       this.ctx.lineWidth = 1;
       this.ctx.strokeStyle = "#404040";
       this.ctx.beginPath();
-
-      for(let x=Math.floor(this.xmin);x<=Math.ceil(this.xmax+0.001);x+=1) {
-          this.ctx.moveTo(x2px(x),y2py(this.ymin));
-          this.ctx.lineTo(x2px(x),y2py(this.ymax));
+  
+      // Vertical lines (original y-axis now horizontal)
+      for(let y=Math.floor(this.ymin); y <= Math.ceil(this.ymax + 0.001); y +=1) {
+        this.ctx.moveTo(x2px(y), y2py(this.xmin));
+        this.ctx.lineTo(x2px(y), y2py(this.xmax));
       }
-
-      for(let y=Math.floor(this.ymin);y<=Math.ceil(this.ymax+0.001);y+=1) {
-          this.ctx.moveTo(x2px(this.xmin),y2py(y));
-          this.ctx.lineTo(x2px(this.xmax),y2py(y));
+  
+      // Horizontal lines (original x-axis now vertical)
+      for(let x=Math.floor(this.xmin); x <= Math.ceil(this.xmax + 0.001); x +=1) {
+        this.ctx.moveTo(x2px(this.ymin), y2py(x));
+        this.ctx.lineTo(x2px(this.ymax), y2py(x));
       }
-
+  
       this.ctx.stroke();
     }
-
+  
+    // Coarser grid (every 5 units)
     this.ctx.lineWidth = 1;
     this.ctx.strokeStyle = "#505050";
     this.ctx.beginPath();
-
-    for(let x=Math.floor(this.xmin/5)*5;x<=Math.ceil(this.xmax/5+0.001)*5;x+=5) {
-        this.ctx.moveTo(x2px(x),y2py(this.ymin));
-        this.ctx.lineTo(x2px(x),y2py(this.ymax));
+  
+    for(let y=Math.floor(this.ymin/5)*5; y <= Math.ceil(this.ymax/5 + 0.001)*5; y +=5) {
+      this.ctx.moveTo(x2px(y), y2py(this.xmin));
+      this.ctx.lineTo(x2px(y), y2py(this.xmax));
     }
-
-    for(let y=Math.floor(this.ymin/5)*5;y<=Math.ceil(this.ymax/5+0.001)*5;y+=5) {
-        this.ctx.moveTo(x2px(this.xmin),y2py(y));
-        this.ctx.lineTo(x2px(this.xmax),y2py(y));
+  
+    for(let x=Math.floor(this.xmin/5)*5; x <= Math.ceil(this.xmax/5 + 0.001)*5; x +=5) {
+      this.ctx.moveTo(x2px(this.ymin), y2py(x));
+      this.ctx.lineTo(x2px(this.ymax), y2py(x));
     }
     this.ctx.stroke();
-
-    // draw actual things specified by subclass
-    // e.g. lines, points, whatever
-
+  
+    // Draw paths, points, text
     this.ctx.fillStyle = "#e0e0e0";
-
+  
     for(let i in drawObjects) {
       let drawObject = drawObjects[i];
       if(drawObject.type === "path") {
         this.ctx.lineWidth = drawObject.lineWidth || 1;
         this.ctx.strokeStyle = drawObject.color || "#e0e0e0";
         this.ctx.beginPath();
-        let px = x2px(drawObject.data[0]);
-        let py = y2py(drawObject.data[1]);
+        let data = drawObject.data;
+        // Swap x and y for each point
+        let px = x2px(data[1]);
+        let py = y2py(data[0]);
         this.ctx.moveTo(px, py);
-        for(let i=1;i<drawObject.data.length/2;i++) {
-          let px = x2px(drawObject.data[2*i]);
-          let py = y2py(drawObject.data[2*i+1]);
+        for(let i=1; i < data.length / 2; i++) {
+          let dataY = data[2*i + 1];
+          let dataX = data[2*i];
+          px = x2px(dataY);
+          py = y2py(dataX);
           this.ctx.lineTo(px, py);
         }
         this.ctx.stroke();
       } else if(drawObject.type === "points") {
         this.ctx.fillStyle = drawObject.color || "#e0e0e0";
         for(let i=0; i < drawObject.data.length / 2; i++) {
-          if(drawObject.data[2*i] == NaN) continue;
-          if(drawObject.data[2*i+1] == NaN) continue;
-          let px = x2px(drawObject.data[2*i])-1;
-          let py = y2py(drawObject.data[2*i+1])-1;
+          let dataX = drawObject.data[2*i];
+          let dataY = drawObject.data[2*i + 1];
+          if(isNaN(dataX) || isNaN(dataY)) continue;
+          let px = x2px(dataY) - 1;
+          let py = y2py(dataX) - 1;
           if(px < -1) continue;
           if(px > this.size + 1) continue;
           if(py < -1) continue;
@@ -315,10 +317,10 @@ class Space2DViewer extends Viewer {
       } else if(drawObject.type === "text") {
         this.ctx.fillStyle = drawObject.color || "#e0e0e0";
         this.ctx.font = "12px Jetbrains Mono";
-        this.ctx.fillText(drawObject.text, x2px(drawObject.x), y2py(drawObject.y));
+        // Swap x and y for text position
+        this.ctx.fillText(drawObject.text, x2px(drawObject.y), y2py(drawObject.x));
       }
     }
-    this.ctx.restore();
     this.drawObjects = drawObjects;
   }
 }
