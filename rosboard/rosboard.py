@@ -98,7 +98,7 @@ class ROSBoardNode(object):
         # loop to keep track of latencies and clock differences for each socket
         threading.Thread(target = self.pingpong_loop, daemon = True).start()
 
-        threading.Thread(target = self.joy_loop, daemon = True).start()
+        # threading.Thread(target = self.joy_loop, daemon = True).start()
         self.lock = threading.Lock()
 
         rospy.loginfo("ROSboard listening on :%d" % self.port)
@@ -156,23 +156,23 @@ class ROSBoardNode(object):
             else:
                 rospy.logwarn("QoS profiles are only used in ROS2")
                 return None
-    def joy_loop(self):
-        while True:
-            time.sleep(0.1)
-            # Expect joy_msg to have separate left and right keys.
-            if not isinstance(ROSBoardSocketHandler.joy_msg, dict):
-                continue
-            if 'left' in ROSBoardSocketHandler.joy_msg and 'right' in ROSBoardSocketHandler.joy_msg:
-                twist_stamped = TwistStamped()
-                twist_stamped.header.stamp = rospy.Time.now()
-                twist_stamped.header.frame_id = "base_link"
-                # Use left joystick for linear velocity.
-                twist_stamped.twist.linear.x = -float(ROSBoardSocketHandler.joy_msg['left']['y']) * 1.0
-                # Optionally, use left joystick x value for lateral motion:
-                twist_stamped.twist.linear.y = -float(ROSBoardSocketHandler.joy_msg['left']['x']) * 1.0
-                # Use right joystick for angular velocity.
-                twist_stamped.twist.angular.z = -float(ROSBoardSocketHandler.joy_msg['right']['x']) * 3.14159265
-                self.twist_pub.publish(twist_stamped)
+    # def joy_loop(self):
+    #     while True:
+    #         time.sleep(0.1)
+    #         # Expect joy_msg to have separate left and right keys.
+    #         if not isinstance(ROSBoardSocketHandler.joy_msg, dict):
+    #             continue
+    #         if 'left' in ROSBoardSocketHandler.joy_msg and 'right' in ROSBoardSocketHandler.joy_msg:
+    #             twist_stamped = TwistStamped()
+    #             twist_stamped.header.stamp = rospy.Time.now()
+    #             twist_stamped.header.frame_id = "base_link"
+    #             # Use left joystick for linear velocity.
+    #             twist_stamped.twist.linear.x = -float(ROSBoardSocketHandler.joy_msg['left']['y']) * 1.0
+    #             # Optionally, use left joystick x value for lateral motion:
+    #             twist_stamped.twist.linear.y = -float(ROSBoardSocketHandler.joy_msg['left']['x']) * 1.0
+    #             # Use right joystick for angular velocity.
+    #             twist_stamped.twist.angular.z = -float(ROSBoardSocketHandler.joy_msg['right']['x']) * 3.14159265
+    #             self.twist_pub.publish(twist_stamped)
 
 
     def pingpong_loop(self):
