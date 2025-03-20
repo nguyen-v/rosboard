@@ -38,10 +38,10 @@ class Space2DViewer extends Viewer {
     this.size = 500;
 
     // bounds of ROI in meters
-    this.xmin = -10;
-    this.xmax = 10;
-    this.ymin = -10;
-    this.ymax = 10;
+    this.xmin = -2.5;
+    this.xmax = 2.5;
+    this.ymin = -2.5;
+    this.ymax = 2.5;
 
     // canvas that shall be drawn upon
     this.canvas = $('<canvas width="' + this.size + '" height="' + this.size + '"></canvas>')

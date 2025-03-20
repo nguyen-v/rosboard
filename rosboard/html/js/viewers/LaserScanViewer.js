@@ -12,31 +12,52 @@ class LaserScanViewer extends Space2DViewer {
   }
   onData(msg) {
     this.card.title.text(msg._topic_name);
-
+  
     let points = null;
-
-    if(msg.__comp) {
+  
+    if (msg.__comp) {
       points = this.decodeCompressed(msg);
     } else {
       points = this.decodeUncompressed(msg);
     }
-
+  
     this.lastPoints = points;
-
-    // send it to the plotter to display
-    let drawObjects = ([
-      {type: "path", data: [0, 0, 0, 1], color: "#00f060", lineWidth: 2}, // unit x axis visualization in red
-      {type: "path", data: [0, 0, 1, 0], color: "#f06060", lineWidth: 2}, // unit y axis visualization in green
-      {type: "points", data: points, color: "#e0e0e0"}, // the laserscan points to be plotted
-    ]);
-
-    if(this.highlightedPoint) {
-      this.onSpace2DClick({x: this.highlightedPoint[0], y: this.highlightedPoint[1]});
-      if(this.highlightedPoint) {
+  
+    // Prepare an array to hold the drawing objects.
+    let drawObjects = [
+      { type: "path", data: [0, 0, 0, 1], color: "#00f060", lineWidth: 2 }, // unit x axis
+      { type: "path", data: [0, 0, 1, 0], color: "#f06060", lineWidth: 2 }, // unit y axis
+      { type: "points", data: points, color: "#e0e0e0" } // laserscan points
+    ];
+  
+    // Add the robot's circle.
+    // The robot has a diameter of 330mm, so radius = 0.33 / 2 = 0.165 m.
+    const robotRadius = 0.165;
+    const numCirclePoints = 36; // increase for a smoother circle
+    let circlePoints = [];
+    for (let i = 0; i <= numCirclePoints; i++) {
+      const angle = (i * 2 * Math.PI) / numCirclePoints;
+      circlePoints.push(robotRadius * Math.cos(angle));
+      circlePoints.push(robotRadius * Math.sin(angle));
+    }
+    drawObjects.push({
+      type: "path",
+      data: circlePoints,
+      color: "#ff00ff", // color for the robot's outline
+      lineWidth: 2
+    });
+  
+    // If there is a highlighted point, add additional drawing objects.
+    if (this.highlightedPoint) {
+      this.onSpace2DClick({
+        x: this.highlightedPoint[0],
+        y: this.highlightedPoint[1]
+      });
+      if (this.highlightedPoint) {
         drawObjects.push({
           type: "points",
           data: this.highlightedPoint,
-          color: "#ff5000",
+          color: "#ff5000"
         });
         drawObjects.push({
           type: "text",
@@ -44,13 +65,18 @@ class LaserScanViewer extends Space2DViewer {
           fontSize: 12,
           x: this.highlightedPoint[0],
           y: this.highlightedPoint[1],
-          color: "#ff5000",
+          color: "#ff5000"
         });
       }
     }
-
+  
+    // Send all drawing objects to the plotter.
     this.draw(drawObjects);
+    if (this.setZoom) {
+      this.setZoom(3);
+    }
   }
+  
 
   onSpace2DClick({x,y}) {
     if(!this.lastPoints) return;
